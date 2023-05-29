@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Tournify-Gamesheet": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\projects\\tournify-gamesheet\\results.xlsx"
+    }
+  }
+}
