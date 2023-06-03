@@ -12,78 +12,85 @@ const double RowHeight = 20;
 Console.WriteLine("Tournify Gamesheet creator");
 
 
-var filePath = args[0];
 var games = new List<GameRecord>();
-
-using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+if (args.Length == 1)
 {
-    // Initialize the workbook
-    IWorkbook workbook = new XSSFWorkbook(file);
+    var filePath = args[0];
 
-    // Get the first sheet
-    ISheet sheet = workbook.GetSheetAt(0);
-
-    // Loop through each row in the sheet and read the data
-    for (int i = 1; i <= sheet.LastRowNum; i++)
+    using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
     {
-        IRow row = sheet.GetRow(i);
+        // Initialize the workbook
+        IWorkbook workbook = new XSSFWorkbook(file);
 
-        // Set the start and end times from the row data
-        var startTimeString = row.GetCell(0)?.ToString() ?? string.Empty;
-        var endTimeString = row.GetCell(1)?.ToString() ?? string.Empty;
+        // Get the first sheet
+        ISheet sheet = workbook.GetSheetAt(0);
 
-        DateTime.TryParse(startTimeString, out DateTime startTime);
-        DateTime.TryParse(endTimeString, out DateTime endTime);
-        
-
-        var referee1 = row.GetCell(9)?.ToString() ?? string.Empty;
-        var referee2 = row.GetCell(10)?.ToString() ?? string.Empty;
-        var scorer = row.GetCell(11)?.ToString() ?? string.Empty;
-
-        if (referee2.StartsWith("Scorer:"))
+        // Loop through each row in the sheet and read the data
+        for (int i = 1; i <= sheet.LastRowNum; i++)
         {
-            scorer = referee2;
-            referee2 = referee1;
+            IRow row = sheet.GetRow(i);
 
+            // Set the start and end times from the row data
+            var startTimeString = row.GetCell(0)?.ToString() ?? string.Empty;
+            var endTimeString = row.GetCell(1)?.ToString() ?? string.Empty;
+
+            DateTime.TryParse(startTimeString, out DateTime startTime);
+            DateTime.TryParse(endTimeString, out DateTime endTime);
+
+
+            var referee1 = row.GetCell(9)?.ToString() ?? string.Empty;
+            var referee2 = row.GetCell(10)?.ToString() ?? string.Empty;
+            var scorer = row.GetCell(11)?.ToString() ?? string.Empty;
+
+            if (referee2.StartsWith("Scorer:"))
+            {
+                scorer = referee2;
+                referee2 = referee1;
+
+            }
+
+            var gamerecord = new GameRecord
+            (
+                StartTime: startTime,
+                EndTime: endTime,
+                Day: row.GetCell(2)?.ToString() ?? string.Empty,
+                Field: row.GetCell(3)?.ToString() ?? string.Empty,
+                Phase: row.GetCell(4)?.ToString() ?? string.Empty,
+                Division: row.GetCell(5)?.ToString() ?? string.Empty,
+                Pool: row.GetCell(6)?.ToString() ?? string.Empty,
+                Team1: row.GetCell(7)?.ToString() ?? string.Empty,
+                Team2: row.GetCell(8)?.ToString() ?? string.Empty,
+                Referee1: referee1,
+                Referee2: referee2,
+                Scorer: scorer
+            );
+
+
+            games.Add(gamerecord);
         }
-
-        var gamerecord = new GameRecord
-        (
-            StartTime: startTime,
-            EndTime: endTime,
-            Day: row.GetCell(2)?.ToString() ?? string.Empty,
-            Field: row.GetCell(3)?.ToString() ?? string.Empty,
-            Phase: row.GetCell(4)?.ToString() ?? string.Empty,
-            Division: row.GetCell(5)?.ToString() ?? string.Empty,
-            Pool: row.GetCell(6)?.ToString() ?? string.Empty,
-            Team1: row.GetCell(7)?.ToString() ?? string.Empty,
-            Team2: row.GetCell(8)?.ToString() ?? string.Empty,
-            Referee1: referee1,
-            Referee2: referee2,
-            Scorer: scorer
-        );
-
-
-        games.Add(gamerecord);
     }
-
-    Console.WriteLine($"Number of games {games.Count}, creating pdf file.");
-
-    PdfDocument document = new PdfDocument();
-
-    foreach (var game in games)
-    {
-        PdfPage page = document.AddPage();
-        XGraphics gfx = XGraphics.FromPdfPage(page);
-
-
-        PrintGameRecord(gfx, game);
-    }
-
-    document.Save($"Gamesheet.pdf");
-    document.Close();
-
 }
+else
+{
+    games.Add(new GameRecord(null, null, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty));
+}
+
+Console.WriteLine($"Number of games {games.Count}, creating pdf file.");
+
+PdfDocument document = new PdfDocument();
+
+foreach (var game in games)
+{
+    PdfPage page = document.AddPage();
+    XGraphics gfx = XGraphics.FromPdfPage(page);
+
+
+    PrintGameRecord(gfx, game);
+}
+
+document.Save($"Gamesheet.pdf");
+document.Close();
+
 
 void PrintGameRecord(XGraphics gfx, GameRecord game)
 {
@@ -96,7 +103,7 @@ void PrintGameRecord(XGraphics gfx, GameRecord game)
     double left = 10;
     gfx.DrawRectangle(XPens.Black, new XRect(left, 10, width / 2, height));
     gfx.DrawString($"Tijd:", font, XBrushes.Black, new XRect(left + 5, 15, gfx.PageSize.Width, 20), XStringFormats.CenterLeft);
-    gfx.DrawString(game.StartTime.ToShortTimeString(), fontBig, XBrushes.Black, new XRect(left + 5, 35, gfx.PageSize.Width, 20), XStringFormats.CenterLeft);
+    gfx.DrawString(game.StartTime.HasValue ? game.StartTime.Value.ToShortTimeString() : string.Empty, fontBig, XBrushes.Black, new XRect(left + 5, 35, gfx.PageSize.Width, 20), XStringFormats.CenterLeft);
 
     left = (width / 2) + 10;
     gfx.DrawRectangle(XPens.Black, new XRect(left, 10, width / 2, height));
@@ -143,7 +150,7 @@ void PrintGameRecord(XGraphics gfx, GameRecord game)
     top = 10;
     left += width;
     gfx.DrawRectangle(XPens.Black, new XRect(left, top, width, rowHeight));
-    gfx.DrawString($"Poule: {game.Pool}", font, XBrushes.Black, new XRect(left + 5, top, gfx.PageSize.Width, rowHeight), XStringFormats.CenterLeft);
+    gfx.DrawString($"Poule: {game.Division} {game.Pool}", font, XBrushes.Black, new XRect(left + 5, top, gfx.PageSize.Width, rowHeight), XStringFormats.CenterLeft);
 
     top += rowHeight;
     gfx.DrawRectangle(XPens.Black, new XRect(left, top, width, 2 * rowHeight));
@@ -242,5 +249,5 @@ void DrawScoreList(XGraphics gfx, string team, string hint, int col)
     }
 }
 
-public record GameRecord(DateTime StartTime, DateTime EndTime, string Day, string Field, string Phase, string Division, string Pool, string Team1, string Team2, string Referee1, string Referee2, string Scorer);
+public record GameRecord(DateTime? StartTime, DateTime? EndTime, string Day, string Field, string Phase, string Division, string Pool, string Team1, string Team2, string Referee1, string Referee2, string Scorer);
 

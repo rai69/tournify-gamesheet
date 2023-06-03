@@ -3,6 +3,10 @@
     "Tournify-Gamesheet": {
       "commandName": "Project",
       "commandLineArgs": "C:\\projects\\tournify-gamesheet\\results.xlsx"
+    },
+    "Tournify-Gamesheet-Empty": {
+      "commandName": "Project",
+      "commandLineArgs": ""
     }
   }
 }
